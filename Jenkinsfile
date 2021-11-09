@@ -1,46 +1,40 @@
 pipeline {
-    agent any {
-        triggers {
-            pollSCM('* * * * *')
-        }
-        stage ('CheckOut') {
-            step{
-                git url: 'https://github.com/Andrej-oss/spring-petclinic.git',
-                branch: 'main'
+    agent any
+
+    stages {
+        stage('Clone') {
+            steps {
+                // Get some code from a GitHub repository
+                git branch:'main', url:'https://github.com/Andrej-oss/spring-petclinic.git'
+
+                // Run Maven on a Unix agent.
+               // sh "mvn -Dmaven.test.failure.ignore=true clean package"
+
+                // To run Maven on a Windows agent, use
+                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
             }
         }
-        stage('Build') {
-            step{
-                sh './mvnw clean package'
+        stage('Build'){
+            steps{
+
+             sh './mvnw clean package'
             }
-            post {
-                always {
+            post{
+                always{
                     junit '**/target/surefire-reports/TEST-*.xml'
                     archiveArtifacts 'target/*.jar'
                 }
-                regression {
-                     emailext attachLog: true,
-                             body: 'Please go to the \'${BUILD_URL}\' and verify the build',
-                             compressLog: true,
-                             recipientProviders: [upstreamDevelopers(), requestor(), developers()],
-                             subject: 'Job \'${JOB_NAME}\' (\'${BUILD_NUMBER}\') is waiting for input'
+                changed{
+                    emailext subject: "Job '${JOB_NAME}' ('${BUILD_NUMBER}') in '${currentBuild.result}'",
+                        body: "Please go to the '${BUILD_URL}' and verify the build",
+                        to: 'test@jenkins',
+                        attachLog: true,
+                        compressLog: true,
+                        recipientProviders: [upstreamDevelopers(), requestor()]
                 }
-                fixed {
-                     emailext attachLog: true,
-                            body: 'Please go to the \'${BUILD_URL}\' and verify the build',
-                            compressLog: true,
-                            recipientProviders: [upstreamDevelopers(), requestor(), developers()],
-                            subject: 'Job \'${JOB_NAME}\' (\'${BUILD_NUMBER}\') is waiting for input'
-
-                }
-                changed {
-                     emailext attachLog: true,
-                             body: 'Please go to the \'${BUILD_URL}\' and verify the build',
-                             compressLog: true,
-                             recipientProviders: [upstreamDevelopers(), requestor(), developers()],
-                             subject: 'Job \'${JOB_NAME}\' (\'${BUILD_NUMBER}\') is waiting for input'
-                                }
             }
+
         }
+
     }
 }
