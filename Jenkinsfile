@@ -1,20 +1,20 @@
-pipeline{
-    agent any{
-        triggers{
+pipeline {
+    agent any {
+        triggers {
             pollSCM('* * * * *')
         }
-        stage ('CheckOut'){
+        stage ('CheckOut') {
             step{
                 git url: 'https://github.com/Andrej-oss/spring-petclinic.git',
                 branch: 'main'
             }
         }
-        stage('Build'){
+        stage('Build') {
             step{
                 sh './mvnw clean package'
             }
-            post{
-                always{
+            post {
+                always {
                     junit '**/target/surefire-reports/TEST-*.xml'
                     archiveArtifacts 'target/*.jar'
                 }
